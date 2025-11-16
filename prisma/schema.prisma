@@ -1,0 +1,23 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "sqlite"; url = "file:./dev.db" }
+model Notice {
+  id                   String   @id
+  source               String
+  title                String
+  description          String?
+  link                 String
+  noticeType           String?
+  noticeStatus         String?
+  organisationName     String?
+  cpvCodes             String?
+  valueLow             Float?
+  valueHigh            Float?
+  awardedValue         Float?
+  publishedDate        DateTime?
+  deadlineDate         DateTime?
+  awardedDate          DateTime?
+  lastNotifiableUpdate DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  hash                 String?
+}
