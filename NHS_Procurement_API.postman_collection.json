@@ -1,0 +1,210 @@
+{
+  "info": {
+    "name": "NHS Procurement API",
+    "description": "Collection for NHS Procurement Search API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Search Procurement Notices",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}",
+            "description": "API Key for authentication (if required)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"keywords\": [\"nhs\", \"technology\", \"digital\"],\n  \"types\": [\"Contract\", \"Opportunity\"],\n  \"statuses\": [\"Open\"],\n  \"procurementStages\": [\"Planning\", \"Tender\"],\n  \"dateFrom\": \"2024-01-01\",\n  \"dateTo\": \"2024-12-31\",\n  \"sources\": [\"CF\", \"FTS\"]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/search",
+          "host": ["{{base_url}}"],
+          "path": ["api", "search"]
+        },
+        "description": "Search for procurement notices with filters"
+      }
+    },
+    {
+      "name": "Search by Date Range (GET)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/search?dateFrom=2024-01-01&dateTo=2024-12-31",
+          "host": ["{{base_url}}"],
+          "path": ["api", "search"],
+          "query": [
+            {
+              "key": "dateFrom",
+              "value": "2024-01-01"
+            },
+            {
+              "key": "dateTo",
+              "value": "2024-12-31"
+            }
+          ]
+        },
+        "description": "Simple search with date range only"
+      }
+    },
+    {
+      "name": "Export to Excel",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [],\n  \"format\": \"excel\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/export",
+          "host": ["{{base_url}}"],
+          "path": ["api", "export"]
+        },
+        "description": "Export search results to Excel format"
+      }
+    },
+    {
+      "name": "Export to CSV",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [],\n  \"format\": \"csv\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/export",
+          "host": ["{{base_url}}"],
+          "path": ["api", "export"]
+        },
+        "description": "Export search results to CSV format"
+      }
+    },
+    {
+      "name": "Search Open Contracts Only",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"keywords\": [\"nhs\"],\n  \"types\": [\"Contract\"],\n  \"statuses\": [\"Open\"],\n  \"sources\": [\"CF\"]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/search",
+          "host": ["{{base_url}}"],
+          "path": ["api", "search"]
+        },
+        "description": "Search for open contracts from Contracts Finder only"
+      }
+    },
+    {
+      "name": "Search High Value Tenders",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-api-key",
+            "value": "{{api_key}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"keywords\": [\"digital\", \"transformation\"],\n  \"types\": [\"Opportunity\"],\n  \"statuses\": [\"Open\"],\n  \"procurementStages\": [\"Tender\"],\n  \"sources\": [\"CF\", \"FTS\"]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/search",
+          "host": ["{{base_url}}"],
+          "path": ["api", "search"]
+        },
+        "description": "Search for high-value digital transformation tenders"
+      }
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"Status code is 200\", function () {",
+          "    pm.response.to.have.status(200);",
+          "});",
+          "",
+          "pm.test(\"Response has success flag\", function () {",
+          "    const jsonData = pm.response.json();",
+          "    pm.expect(jsonData.success).to.eql(true);",
+          "});",
+          "",
+          "pm.test(\"Response has items array\", function () {",
+          "    const jsonData = pm.response.json();",
+          "    pm.expect(jsonData.items).to.be.an('array');",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "your-api-key-here",
+      "type": "string"
+    }
+  ]
+}

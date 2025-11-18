@@ -12,6 +12,45 @@ const NAMED_HTML_ENTITIES: Record<string, string> = {
   nbsp: " "
 };
 
+// Schema definition for the API response items
+const ITEM_SCHEMA = {
+  id: { type: "string", description: "Unique notice identifier" },
+  parentId: { type: "string | null", description: "Parent notice ID if this is an amendment or related notice" },
+  source: { type: "string", enum: ["CF", "FTS"], description: "Data source: CF (ContractsFinder) or FTS (Find a Tender)" },
+  title: { type: "string", description: "Notice title" },
+  noticeIdentifier: { type: "string | null", description: "Official notice reference number", sources: ["CF"] },
+  description: { type: "string | null", description: "Detailed description of the opportunity" },
+  link: { type: "string", description: "URL to the full notice" },
+  noticeType: { type: "string", description: "Type of notice (Contract, Opportunity, EarlyEngagement, FutureOpportunity)", sources: ["CF"] },
+  noticeStatus: { type: "string", description: "Status of notice (Open, Awarded)", sources: ["CF"] },
+  organisationName: { type: "string | null", description: "Contracting organisation name" },
+  organisationAddress: { type: "string | null", description: "Contracting organisation address", sources: ["FTS"] },
+  cpvCodes: { type: "string[]", description: "Common Procurement Vocabulary codes" },
+  cpvCodesExtended: { type: "string[] | null", description: "Extended CPV codes", sources: ["CF"] },
+  cpvDescription: { type: "string | null", description: "Description of primary CPV code" },
+  cpvDescriptionExpanded: { type: "string | null", description: "Expanded CPV code descriptions" },
+  valueLow: { type: "number | null", description: "Estimated minimum contract value" },
+  valueHigh: { type: "number | null", description: "Estimated maximum contract value" },
+  awardedValue: { type: "number | null", description: "Actual awarded contract value" },
+  awardedSupplier: { type: "string | null", description: "Name of awarded supplier" },
+  publishedDate: { type: "string", description: "ISO 8601 date when notice was published" },
+  deadlineDate: { type: "string | null", description: "ISO 8601 date for submission deadline" },
+  awardedDate: { type: "string | null", description: "ISO 8601 date when contract was awarded" },
+  start: { type: "string | null", description: "ISO 8601 date for contract start" },
+  end: { type: "string | null", description: "ISO 8601 date for contract end" },
+  approachMarketDate: { type: "string | null", description: "ISO 8601 date for market approach", sources: ["CF"] },
+  postcode: { type: "string | null", description: "Location postcode", sources: ["CF"] },
+  region: { type: "string | null", description: "Region code", sources: ["CF"] },
+  regionText: { type: "string | null", description: "Region name", sources: ["CF"] },
+  coordinates: { type: "object | null", description: "Geographic coordinates {lat, lon}", sources: ["CF"] },
+  isSuitableForSme: { type: "boolean | null", description: "Suitable for Small/Medium Enterprises", sources: ["CF"] },
+  isSuitableForVco: { type: "boolean | null", description: "Suitable for Voluntary/Community Organisations", sources: ["CF"] },
+  awardedToSme: { type: "boolean | null", description: "Awarded to SME", sources: ["CF"] },
+  awardedToVcse: { type: "boolean | null", description: "Awarded to Voluntary/Community/Social Enterprise", sources: ["CF"] },
+  lastNotifiableUpdate: { type: "string | null", description: "ISO 8601 date of last update", sources: ["CF"] },
+  procurementStage: { type: "string | null", enum: ["Pipeline", "Planning", "Tender", "Award", "Contract", "Termination"], description: "Derived procurement stage" }
+};
+
 function decodeHtmlEntities(value?: string | null): string | null | undefined {
   if (value === null || value === undefined) return value;
   if (value === "") return "";
@@ -165,7 +204,8 @@ export async function GET(req: Request) {
     return NextResponse.json({
       success: true,
       count: filtered.length,
-      items: filtered
+      items: filtered,
+      schema: ITEM_SCHEMA
     });
   } catch (e:any) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 });
@@ -329,7 +369,8 @@ export async function POST(req: Request) {
       success: true,
       count: filtered.length,
       items: filtered,
-      counts
+      counts,
+      schema: ITEM_SCHEMA
     });
   } catch (e:any) {
     console.error("Error in POST /api/search:", e);
