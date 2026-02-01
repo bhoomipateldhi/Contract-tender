@@ -4,7 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type TenderRelease = {
   ocid?: string;
@@ -48,7 +57,7 @@ type Contract = {
 type ApiResponse = { tenders?: TenderRelease[]; count?: number; error?: string };
 
 function formatDate(value?: string) {
-  if (!value) return "—";
+  if (!value) return "-";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString("en-GB", {
@@ -61,7 +70,7 @@ function formatDate(value?: string) {
 }
 
 function formatMoney(value?: number, currency?: string) {
-  if (value === undefined || value === null) return "—";
+  if (value === undefined || value === null) return "-";
   try {
     return new Intl.NumberFormat("en-GB", {
       style: "currency",
@@ -74,9 +83,9 @@ function formatMoney(value?: number, currency?: string) {
 }
 
 function buildAddress(party?: Party) {
-  if (!party?.address) return "—";
+  if (!party?.address) return "-";
   const { streetAddress, locality, postalCode, countryName } = party.address;
-  return [streetAddress, locality, postalCode, countryName].filter(Boolean).join(", ") || "—";
+  return [streetAddress, locality, postalCode, countryName].filter(Boolean).join(", ") || "-";
 }
 
 function getSuppliers(release: TenderRelease) {
@@ -91,7 +100,7 @@ function getBuyer(release: TenderRelease) {
   const fromBuyer = release.buyer?.name;
   if (fromBuyer) return fromBuyer;
   const buyerParty = release.parties?.find(party => party.roles?.includes("buyer"));
-  return buyerParty?.name || "—";
+  return buyerParty?.name || "-";
 }
 
 function getBuyerParty(release: TenderRelease) {
@@ -107,12 +116,13 @@ function getNoticeUrl(release: TenderRelease) {
 }
 
 export default function TendersPage() {
+  const today = new Date().toISOString().slice(0, 10);
   const [tenders, setTenders] = useState<TenderRelease[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [updatedTo, setUpdatedTo] = useState("");
-  const [limit, setLimit] = useState("100");
+  const [updatedTo, setUpdatedTo] = useState(today);
   const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<TenderRelease | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -121,8 +131,9 @@ export default function TendersPage() {
       setError(null);
       try {
         const params = new URLSearchParams();
-        if (updatedTo) params.set("updatedTo", updatedTo);
-        if (limit) params.set("limit", limit);
+        const effectiveDate = updatedTo || today;
+        if (effectiveDate) params.set("updatedTo", `${effectiveDate}T23:59:59Z`);
+        params.set("limit", "100");
         const url = `/api/tenders${params.toString() ? `?${params.toString()}` : ""}`;
         const res = await fetch(url);
         const data = (await res.json()) as ApiResponse;
@@ -138,7 +149,7 @@ export default function TendersPage() {
     return () => {
       isMounted = false;
     };
-  }, [updatedTo, limit]);
+  }, [updatedTo]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return tenders;
@@ -159,13 +170,20 @@ export default function TendersPage() {
     });
   }, [tenders, query]);
 
+  const selectedBuyer = selected ? getBuyer(selected) : "-";
+  const selectedBuyerParty = selected ? getBuyerParty(selected) : undefined;
+  const selectedSuppliers = selected ? getSuppliers(selected) : [];
+  const selectedContract = selected?.contracts?.[0];
+  const selectedValue = selectedContract?.value?.amountGross ?? selectedContract?.value?.amount;
+  const selectedUrl = selected ? getNoticeUrl(selected) : null;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-10">
         <header className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge>FTS Releases</Badge>
-            <Badge>Live data</Badge>
+            <Badge className="border-[#d9ded8] bg-transparent text-slate-700">FTS Releases</Badge>
+            <Badge className="border-[#d9ded8] bg-transparent text-slate-700">Live data</Badge>
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">NHS Tender Intelligence</h1>
           <p className="text-sm text-muted-foreground">
@@ -174,24 +192,21 @@ export default function TendersPage() {
           </p>
         </header>
 
-        <Card className="p-6">
+        <Card className="bg-[#e7ebe4] p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-medium">Filters</p>
               <p className="text-xs text-muted-foreground">Updated tender releases</p>
             </div>
-            <div className="grid w-full gap-3 md:grid-cols-3 lg:w-auto lg:grid-cols-4">
+            <div className="grid w-full gap-3 md:grid-cols-2 lg:w-auto lg:grid-cols-3">
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-muted-foreground">Updated To (ISO)</label>
+                <label className="text-xs text-muted-foreground">Updated To (Date)</label>
                 <Input
+                  type="date"
                   value={updatedTo}
                   onChange={event => setUpdatedTo(event.target.value)}
-                  placeholder="2026-02-01T00:33:04Z"
+                  placeholder="2026-02-01"
                 />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs text-muted-foreground">Limit</label>
-                <Input value={limit} onChange={event => setLimit(event.target.value)} placeholder="100" />
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-muted-foreground">Keyword</label>
@@ -207,8 +222,8 @@ export default function TendersPage() {
                   type="button"
                   onClick={() => {
                     setUpdatedTo(updatedTo.trim());
-                    setLimit(limit.trim());
                   }}
+                  className="bg-slate-900 text-white hover:bg-slate-800"
                 >
                   Refresh
                 </Button>
@@ -217,25 +232,10 @@ export default function TendersPage() {
           </div>
         </Card>
 
-        <section className="grid gap-4 sm:grid-cols-3">
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Total releases</p>
-            <p className="text-2xl font-semibold">{tenders.length}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Filtered</p>
-            <p className="text-2xl font-semibold">{filtered.length}</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Latest update</p>
-            <p className="text-sm">{formatDate(tenders[0]?.date)}</p>
-          </Card>
-        </section>
-
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Tender feed</h2>
-            {isLoading ? <Badge>Loading</Badge> : null}
+            {isLoading ? <Badge className="border-[#d9ded8] bg-transparent text-slate-600">Loading</Badge> : null}
           </div>
 
           {error ? (
@@ -243,85 +243,138 @@ export default function TendersPage() {
           ) : null}
 
           {isLoading ? (
-            <Card className="p-6 text-sm text-muted-foreground">Loading tenders…</Card>
+            <Card className="p-6 text-sm text-muted-foreground">Loading tenders...</Card>
           ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
-              {filtered.map((release, index) => {
-                const buyer = getBuyer(release);
-                const buyerParty = getBuyerParty(release);
-                const suppliers = getSuppliers(release);
-                const contract = release.contracts?.[0];
-                const value = contract?.value?.amountGross ?? contract?.value?.amount;
-                const url = getNoticeUrl(release);
-                const tags = release.tag || [];
-
-                return (
-                  <Card key={`${release.ocid || "release"}-${index}`} className="p-6">
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span>{formatDate(release.date)}</span>
-                      <span className="h-1 w-1 rounded-full bg-muted-foreground" />
-                      <span>{release.ocid || release.id}</span>
-                    </div>
-                    <h3 className="mt-3 text-lg font-semibold">
-                      {release.tender?.title || "Untitled tender"}
-                    </h3>
-                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
-                      {release.tender?.description || "No description provided."}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {tags.map(tag => (
-                        <Badge key={tag}>{tag}</Badge>
-                      ))}
-                      {release.tender?.status ? <Badge>{release.tender.status}</Badge> : null}
-                    </div>
-
-                    <div className="mt-5 grid gap-3 text-sm">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Buyer</p>
-                        <p className="font-medium">{buyer}</p>
-                        <p className="text-xs text-muted-foreground">{buildAddress(buyerParty)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Supplier</p>
-                        <p className="font-medium">{suppliers.length ? suppliers.join(", ") : "—"}</p>
-                      </div>
-                      <div className="grid gap-2 sm:grid-cols-3">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Contract value</p>
-                          <p className="font-medium">{formatMoney(value, contract?.value?.currency)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Start</p>
-                          <p className="text-sm">{formatDate(contract?.period?.startDate)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">End</p>
-                          <p className="text-sm">{formatDate(contract?.period?.endDate)}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{release.initiationType || "tender"}</span>
-                      {url ? (
-                        <a
-                          href={url}
-                          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          View notice
-                        </a>
-                      ) : null}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
+            <Card className="bg-white p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Buyer</TableHead>
+                    <TableHead>Supplier</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((release, index) => {
+                    const buyer = getBuyer(release);
+                    const suppliers = getSuppliers(release);
+                    const contract = release.contracts?.[0];
+                    const value = contract?.value?.amountGross ?? contract?.value?.amount;
+                    return (
+                      <TableRow
+                        key={`${release.ocid || "release"}-${index}`}
+                        className="cursor-pointer"
+                        onClick={() => setSelected(release)}
+                      >
+                        <TableCell className="whitespace-nowrap">{formatDate(release.date)}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <button type="button" className="text-left font-medium hover:underline">
+                              {release.tender?.title || "Untitled tender"}
+                            </button>
+                            <div className="text-xs text-muted-foreground">{release.ocid || release.id || "-"}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{buyer}</TableCell>
+                        <TableCell>{suppliers.length ? suppliers.join(", ") : "-"}</TableCell>
+                        <TableCell>
+                          {release.tender?.status ? <Badge>{release.tender.status}</Badge> : <span>-</span>}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatMoney(value, contract?.value?.currency)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </section>
       </div>
+
+      <Dialog
+        open={Boolean(selected)}
+        onOpenChange={open => {
+          if (!open) setSelected(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selected?.tender?.title || "Tender details"}</DialogTitle>
+            <DialogDescription>{selected?.tender?.description || "No description provided."}</DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 text-sm">
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Buyer</p>
+                <p className="font-medium">{selectedBuyer}</p>
+                <p className="text-xs text-muted-foreground">{buildAddress(selectedBuyerParty)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Suppliers</p>
+                <p className="font-medium">{selectedSuppliers.length ? selectedSuppliers.join(", ") : "-"}</p>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Release date</p>
+                <p>{formatDate(selected?.date)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p>{selected?.tender?.status || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Contract value</p>
+                <p>{formatMoney(selectedValue, selectedContract?.value?.currency)}</p>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Start</p>
+                <p>{formatDate(selectedContract?.period?.startDate)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">End</p>
+                <p>{formatDate(selectedContract?.period?.endDate)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Signed</p>
+                <p>{formatDate(selectedContract?.dateSigned)}</p>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Identifiers</p>
+                <p>{selected?.ocid || selected?.id || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Initiation type</p>
+                <p>{selected?.initiationType || "-"}</p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            {selectedUrl ? (
+              <a
+                href={selectedUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Open notice
+              </a>
+            ) : null}
+            <Button onClick={() => setSelected(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
