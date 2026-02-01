@@ -121,7 +121,7 @@ export default function TendersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatedTo, setUpdatedTo] = useState(today);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState("nhs");
   const [selected, setSelected] = useState<TenderRelease | null>(null);
 
   useEffect(() => {

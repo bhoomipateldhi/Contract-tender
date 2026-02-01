@@ -7,12 +7,28 @@ type TenderRelease = {
   [key: string]: unknown;
 };
 
-export async function fetchTenderReleases(updatedTo?: string, limit?: string | number): Promise<TenderRelease[]> {
-  const params = new URLSearchParams();
-  const safeLimit = limit ?? 100;
-  if (updatedTo) params.set("updatedTo", updatedTo);
-  params.set("limit", String(safeLimit));
-  const query = params.toString();
+type TenderFetchParams = {
+  updatedFrom?: string;
+  updatedTo?: string;
+  limit?: string | number;
+  cursor?: string;
+  stages?: string[] | string;
+};
+
+export async function fetchTenderReleases(options: TenderFetchParams = {}): Promise<TenderRelease[]> {
+  const searchParams = new URLSearchParams();
+  const safeLimit = options.limit ?? 100;
+  if (options.updatedFrom) searchParams.set("updatedFrom", options.updatedFrom);
+  if (options.updatedTo) searchParams.set("updatedTo", options.updatedTo);
+  if (options.cursor) searchParams.set("cursor", options.cursor);
+  if (options.stages) {
+    const values = Array.isArray(options.stages)
+      ? options.stages
+      : String(options.stages).split(",").map(value => value.trim());
+    if (values.length) searchParams.set("tag", values.join(","));
+  }
+  searchParams.set("limit", String(safeLimit));
+  const query = searchParams.toString();
   const url = query ? `${UK_FIND_TENDER_API}?${query}` : UK_FIND_TENDER_API;
 
   const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
@@ -38,7 +54,7 @@ export async function fetchTenderReleasesForDate(
   let page = 0;
 
   while (page < maxPages) {
-    const releases = await fetchTenderReleases(currentTo, limit);
+    const releases = await fetchTenderReleases({ updatedTo: currentTo, limit });
     if (!releases.length) break;
 
     for (const release of releases) {
