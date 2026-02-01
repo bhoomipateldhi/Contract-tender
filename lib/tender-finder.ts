@@ -1,5 +1,11 @@
 const UK_FIND_TENDER_API = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages";
 
+export const TENDER_STAGES = [
+  { value: "planning", label: "Planning" },
+  { value: "tender", label: "Tender" },
+  { value: "award", label: "Award" }
+] as const;
+
 type TenderRelease = {
   id?: string;
   ocid?: string;
@@ -7,45 +13,24 @@ type TenderRelease = {
   [key: string]: unknown;
 };
 
-type TenderFetchParams = {
-  updatedFrom?: string;
-  updatedTo?: string;
+type FetchTendersParams = {
+  date?: string;
   limit?: string | number;
-  cursor?: string;
   stages?: string[] | string;
 };
 
-export async function fetchTenderReleases(options: TenderFetchParams = {}): Promise<TenderRelease[]> {
-  const searchParams = new URLSearchParams();
-  const safeLimit = options.limit ?? 100;
-  if (options.updatedFrom) searchParams.set("updatedFrom", options.updatedFrom);
-  if (options.updatedTo) searchParams.set("updatedTo", options.updatedTo);
-  if (options.cursor) searchParams.set("cursor", options.cursor);
-  if (options.stages) {
-    const values = Array.isArray(options.stages)
-      ? options.stages
-      : String(options.stages).split(",").map(value => value.trim());
-    if (values.length) searchParams.set("tag", values.join(","));
-  }
-  searchParams.set("limit", String(safeLimit));
-  const query = searchParams.toString();
-  const url = query ? `${UK_FIND_TENDER_API}?${query}` : UK_FIND_TENDER_API;
+type FetchTendersPageParams = {
+  updatedTo?: string;
+  limit?: string | number;
+  stages?: string[] | string;
+};
 
-  const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Find a Tender API ${response.status}`);
-  }
+export async function fetchTenders(options: FetchTendersParams = {}): Promise<TenderRelease[]> {
+  const date = options.date || new Date().toISOString().slice(0, 10);
+  const maxPages = 50;
+  const delayMs = 200;
+  const stages = options.stages;
 
-  const data = (await response.json()) as { releases?: TenderRelease[] };
-  return Array.isArray(data.releases) ? data.releases : [];
-}
-
-export async function fetchTenderReleasesForDate(
-  date: string,
-  limit: number = 100,
-  maxPages: number = 50,
-  delayMs: number = 200
-): Promise<TenderRelease[]> {
   const startIso = `${date}T00:00:00Z`;
   const endIso = `${date}T23:59:59Z`;
   let currentTo = endIso;
@@ -54,7 +39,7 @@ export async function fetchTenderReleasesForDate(
   let page = 0;
 
   while (page < maxPages) {
-    const releases = await fetchTenderReleases({ updatedTo: currentTo, limit });
+    const releases = await fetchTendersPage({ updatedTo: currentTo, stages });
     if (!releases.length) break;
 
     for (const release of releases) {
@@ -67,8 +52,6 @@ export async function fetchTenderReleasesForDate(
         all.push(release);
       }
     }
-
-    if (releases.length < limit) break;
 
     const oldest = findOldestReleaseDate(releases);
     if (!oldest) break;
@@ -84,6 +67,30 @@ export async function fetchTenderReleasesForDate(
   }
 
   return all;
+}
+
+async function fetchTendersPage(options: FetchTendersPageParams): Promise<TenderRelease[]> {
+  const searchParams = new URLSearchParams();
+  const safeLimit = options.limit ?? 100;
+  if (options.updatedTo) searchParams.set("updatedTo", options.updatedTo);
+  if (options.stages) {
+    const values = Array.isArray(options.stages)
+      ? options.stages
+      : [String(options.stages).trim()];
+    const stage = values.find(value => TENDER_STAGES.some(item => item.value === value));
+    if (stage) searchParams.set("stages", stage);
+  }
+  searchParams.set("limit", String(safeLimit));
+  const query = searchParams.toString();
+  const url = query ? `${UK_FIND_TENDER_API}?${query}` : UK_FIND_TENDER_API;
+
+  const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`Find a Tender API ${response.status}`);
+  }
+
+  const data = (await response.json()) as { releases?: TenderRelease[] };
+  return Array.isArray(data.releases) ? data.releases : [];
 }
 
 function findOldestReleaseDate(releases: TenderRelease[]): string | null {

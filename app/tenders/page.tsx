@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { TENDER_STAGES } from "@/lib/tender-finder";
 import {
   Dialog,
   DialogContent,
@@ -121,6 +122,7 @@ export default function TendersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatedTo, setUpdatedTo] = useState(today);
+  const [stage, setStage] = useState("");
   const [query, setQuery] = useState("nhs");
   const [selected, setSelected] = useState<TenderRelease | null>(null);
 
@@ -134,6 +136,7 @@ export default function TendersPage() {
         const effectiveDate = updatedTo || today;
         if (effectiveDate) params.set("date", effectiveDate);
         params.set("limit", "100");
+        if (stage) params.append("stages", stage);
         const url = `/api/tenders${params.toString() ? `?${params.toString()}` : ""}`;
         const res = await fetch(url);
         const data = (await res.json()) as ApiResponse;
@@ -149,7 +152,7 @@ export default function TendersPage() {
     return () => {
       isMounted = false;
     };
-  }, [updatedTo]);
+  }, [updatedTo, stage]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return tenders;
@@ -198,7 +201,7 @@ export default function TendersPage() {
               <p className="text-sm font-medium">Filters</p>
               <p className="text-xs text-muted-foreground">Updated tender releases</p>
             </div>
-            <div className="grid w-full gap-3 md:grid-cols-2 lg:w-auto lg:grid-cols-3">
+            <div className="grid w-full gap-3 md:grid-cols-2 lg:w-auto lg:grid-cols-4">
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-muted-foreground">Updated To (Date)</label>
                 <Input
@@ -207,6 +210,21 @@ export default function TendersPage() {
                   onChange={event => setUpdatedTo(event.target.value)}
                   placeholder="2026-02-01"
                 />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs text-muted-foreground">Stage</label>
+                <select
+                  value={stage}
+                  onChange={event => setStage(event.target.value)}
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none ring-offset-2 transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">All stages</option>
+                  {TENDER_STAGES.map(item => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-xs text-muted-foreground">Keyword</label>
@@ -222,6 +240,7 @@ export default function TendersPage() {
                   type="button"
                   onClick={() => {
                     setUpdatedTo(updatedTo.trim());
+                    setStage(stage.trim());
                   }}
                   className="bg-slate-900 text-white hover:bg-slate-800"
                 >
