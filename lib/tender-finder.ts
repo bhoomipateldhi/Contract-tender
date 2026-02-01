@@ -1,6 +1,13 @@
 const UK_FIND_TENDER_API = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages";
 
-export async function fetchTenderReleases(updatedTo?: string, limit?: string | number): Promise<unknown[]> {
+type TenderRelease = {
+  id?: string;
+  ocid?: string;
+  date?: string;
+  [key: string]: unknown;
+};
+
+export async function fetchTenderReleases(updatedTo?: string, limit?: string | number): Promise<TenderRelease[]> {
   const params = new URLSearchParams();
   const safeLimit = limit ?? 100;
   if (updatedTo) params.set("updatedTo", updatedTo);
@@ -13,6 +20,86 @@ export async function fetchTenderReleases(updatedTo?: string, limit?: string | n
     throw new Error(`Find a Tender API ${response.status}`);
   }
 
-  const data = (await response.json()) as { releases?: unknown[] };
+  const data = (await response.json()) as { releases?: TenderRelease[] };
   return Array.isArray(data.releases) ? data.releases : [];
+}
+
+export async function fetchTenderReleasesForDate(
+  date: string,
+  limit: number = 100,
+  maxPages: number = 50,
+  delayMs: number = 200
+): Promise<TenderRelease[]> {
+  const startIso = `${date}T00:00:00Z`;
+  const endIso = `${date}T23:59:59Z`;
+  let currentTo = endIso;
+  const all: TenderRelease[] = [];
+  const seen = new Set<string>();
+  let page = 0;
+
+  while (page < maxPages) {
+    const releases = await fetchTenderReleases(currentTo, limit);
+    if (!releases.length) break;
+
+    for (const release of releases) {
+      const key = release.id || release.ocid;
+      if (key && seen.has(key)) continue;
+      if (key) seen.add(key);
+
+      const releaseDate = parseDateSafe(release.date);
+      if (releaseDate !== null && releaseDate >= Date.parse(startIso) && releaseDate <= Date.parse(endIso)) {
+        all.push(release);
+      }
+    }
+
+    if (releases.length < limit) break;
+
+    const oldest = findOldestReleaseDate(releases);
+    if (!oldest) break;
+
+    if (Date.parse(oldest) < Date.parse(startIso)) break;
+
+    const nextTo = subtractIsoMillis(oldest, 1);
+    if (!nextTo || nextTo === currentTo) break;
+
+    currentTo = nextTo;
+    page += 1;
+    await delay(delayMs);
+  }
+
+  return all;
+}
+
+function findOldestReleaseDate(releases: TenderRelease[]): string | null {
+  let oldest: string | null = null;
+  let oldestTime = Number.POSITIVE_INFINITY;
+
+  for (const release of releases) {
+    const value = release?.date;
+    if (!value) continue;
+    const time = Date.parse(value);
+    if (!Number.isFinite(time)) continue;
+    if (time < oldestTime) {
+      oldestTime = time;
+      oldest = value;
+    }
+  }
+
+  return oldest;
+}
+
+function subtractIsoMillis(isoValue: string, millis: number): string | null {
+  const time = Date.parse(isoValue);
+  if (!Number.isFinite(time)) return null;
+  return new Date(time - millis).toISOString();
+}
+
+function parseDateSafe(value?: string): number | null {
+  if (!value) return null;
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? time : null;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

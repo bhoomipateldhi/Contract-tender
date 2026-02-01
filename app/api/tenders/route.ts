@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { fetchTenderReleases } from "@/lib/tender-finder";
+import { fetchTenderReleases, fetchTenderReleasesForDate } from "@/lib/tender-finder";
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
+    const date = url.searchParams.get("date");
     const updatedTo = url.searchParams.get("updatedTo") || undefined;
     const limit = url.searchParams.get("limit") || undefined;
 
-    const releases = await fetchTenderReleases(updatedTo, limit);
+    const releases = date
+      ? await fetchTenderReleasesForDate(date)
+      : await fetchTenderReleases(updatedTo, limit);
     return NextResponse.json({ tenders: releases, count: releases.length });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

@@ -132,7 +132,7 @@ export default function TendersPage() {
       try {
         const params = new URLSearchParams();
         const effectiveDate = updatedTo || today;
-        if (effectiveDate) params.set("updatedTo", `${effectiveDate}T23:59:59Z`);
+        if (effectiveDate) params.set("date", effectiveDate);
         params.set("limit", "100");
         const url = `/api/tenders${params.toString() ? `?${params.toString()}` : ""}`;
         const res = await fetch(url);
@@ -275,7 +275,7 @@ export default function TendersPage() {
                             <button type="button" className="text-left font-medium hover:underline">
                               {release.tender?.title || "Untitled tender"}
                             </button>
-                            <div className="text-xs text-muted-foreground">{release.ocid || release.id || "-"}</div>
+                            <div className="text-xs text-muted-foreground">{release.id || "-"}</div>
                           </div>
                         </TableCell>
                         <TableCell>{buyer}</TableCell>
