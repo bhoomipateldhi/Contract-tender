@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React from 'react';
 
 type Notice = {
@@ -331,7 +331,7 @@ export default function Home() {
 
     if (dateFrom || dateTo) {
       if (dateFrom && dateTo) {
-        chips.push({ key: "dateRange", label: `Dates: ${dateFrom} → ${dateTo}` });
+        chips.push({ key: "dateRange", label: `Dates: ${dateFrom} â†’ ${dateTo}` });
       } else if (dateFrom) {
         chips.push({ key: "dateFrom", label: `From: ${dateFrom}` });
       } else if (dateTo) {
@@ -572,55 +572,55 @@ export default function Home() {
   }, [items]);
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px", color: "#111" }}>
-      <header style={{ marginBottom: 20 }}>
-        <h1 style={{ fontSize: 28, marginBottom: 8 }}>NHS Procurement Alerts</h1>
-        <p style={{ opacity: 0.75, margin: 0 }}>
+    <div className="mx-auto max-w-[1200px] px-4 py-6">
+      <header className="mb-5">
+        <h1 className="mb-2 text-[28px]">NHS Procurement Alerts</h1>
+        <p className="m-0 opacity-75">
           Search Contracts Finder and Find a Tender. Filters update automatically; adjust keywords, procurement stage, type, status, or date range to refine the feed.
         </p>
       </header>
 
-      <section style={{ background: "#f5f7fb", borderRadius: 12, padding: 20, boxShadow: "0 1px 3px rgba(15,23,42,0.08)", marginBottom: 24 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Keywords (CSV)</span>
+      <section className="mb-6 rounded-xl bg-[#f5f7fb] p-5 shadow-[0_1px_3px_rgba(15,23,42,0.08)] text-[#111]">
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+          <label className="flex flex-col gap-1.5">
+            <span className="font-semibold">Keywords (CSV)</span>
             <input
               value={keywords}
               onChange={event => setKeywords(event.target.value)}
               placeholder="e.g. nhs, digital, cloud"
-              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2.5"
             />
           </label>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Date from</span>
+          <label className="flex flex-col gap-1.5">
+            <span className="font-semibold">Date from</span>
             <input
               type="date"
               value={dateFrom}
               max={dateTo || undefined}
               onChange={event => setDateFrom(event.target.value)}
-              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2.5"
             />
           </label>
 
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontWeight: 600 }}>Date to</span>
+          <label className="flex flex-col gap-1.5">
+            <span className="font-semibold">Date to</span>
             <input
               type="date"
               value={dateTo}
               min={dateFrom || undefined}
               onChange={event => setDateTo(event.target.value)}
-              style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff" }}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2.5"
             />
           </label>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginTop: 20 }}>
+        <div className="mt-5 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
           <div>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Types</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <div className="mb-2 font-semibold">Types</div>
+            <div className="flex flex-wrap gap-3">
               {ALL_TYPES.map(type => (
-                <label key={type} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+                <label key={type} className="flex items-center gap-1.5 text-sm">
                   <input type="checkbox" checked={types.includes(type)} onChange={() => toggleType(type)} />
                   {type}
                 </label>
@@ -628,10 +628,10 @@ export default function Home() {
             </div>
           </div>
           <div>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Statuses</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <div className="mb-2 font-semibold">Statuses</div>
+            <div className="flex flex-wrap gap-3">
               {ALL_STATUSES.map(status => (
-                <label key={status} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+                <label key={status} className="flex items-center gap-1.5 text-sm">
                   <input type="checkbox" checked={statuses.includes(status)} onChange={() => toggleStatus(status)} />
                   {status}
                 </label>
@@ -639,11 +639,11 @@ export default function Home() {
             </div>
           </div>
           <div>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Sources</div>
+            <div className="mb-2 font-semibold">Sources</div>
             <select
               value={selectedSourceOption}
               onChange={handleSourceSelect}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid #cbd5e1", background: "#fff", color: "#111" }}
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-[#111]"
             >
               <option value="ALL">Contracts Finder + Find a Tender</option>
               <option value="CF">Contracts Finder only</option>
@@ -651,10 +651,10 @@ export default function Home() {
             </select>
           </div>
           <div>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>Procurement stage</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            <div className="mb-2 font-semibold">Procurement stage</div>
+            <div className="flex flex-wrap gap-3">
               {PROCUREMENT_STAGE_OPTIONS.map(option => (
-                <label key={option.value} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14 }}>
+                <label key={option.value} className="flex items-center gap-1.5 text-sm">
                   <input
                     type="checkbox"
                     checked={procurementStages.includes(option.value)}
@@ -667,65 +667,46 @@ export default function Home() {
           </div>
         </div>
 
-        <div style={{ marginTop: 24, display: "flex", flexWrap: "wrap", gap: 12 }}>
+        <div className="mt-6 flex flex-wrap gap-3">
           <button
             onClick={handleManualRefresh}
             disabled={loading}
-            style={{
-              padding: "10px 18px",
-              borderRadius: 8,
-              border: "none",
-              background: loading ? "#94a3b8" : "#2563eb",
-              color: "#fff",
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              transition: "background 0.2s ease"
-            }}
+            className={`rounded-lg px-[18px] py-[10px] font-semibold text-white transition-colors ${
+              loading ? "cursor-not-allowed bg-slate-400" : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             {loading ? "Searching..." : "Refresh Now"}
           </button>
           <button
             onClick={resetFilters}
             disabled={!hasCustomFilters}
-            style={{
-              padding: "10px 18px",
-              borderRadius: 8,
-              border: "1px solid #cbd5e1",
-              background: hasCustomFilters ? "#fff" : "#e2e8f0",
-              color: "#1e293b",
-              fontWeight: 500,
-              cursor: hasCustomFilters ? "pointer" : "not-allowed"
-            }}
+            className={`rounded-lg border px-[18px] py-[10px] font-medium text-slate-800 transition-colors ${
+              hasCustomFilters
+                ? "cursor-pointer border-slate-300 bg-white hover:bg-slate-50"
+                : "cursor-not-allowed border-slate-300 bg-slate-200"
+            }`}
           >
             Reset Filters
           </button>
           <button
             onClick={handleExportExcel}
             disabled={!items.length || loading}
-            style={{
-              padding: "10px 18px",
-              borderRadius: 8,
-              border: "1px solid #cbd5e1",
-              background: !items.length || loading ? "#e2e8f0" : "#fff",
-              color: "#1e293b",
-              fontWeight: 500,
-              cursor: !items.length || loading ? "not-allowed" : "pointer"
-            }}
+            className={`rounded-lg border px-[18px] py-[10px] font-medium text-slate-800 transition-colors ${
+              !items.length || loading
+                ? "cursor-not-allowed border-slate-300 bg-slate-200"
+                : "cursor-pointer border-slate-300 bg-white hover:bg-slate-50"
+            }`}
           >
             Export Excel
           </button>
           <button
             onClick={handleExportCsv}
             disabled={!items.length || loading}
-            style={{
-              padding: "10px 18px",
-              borderRadius: 8,
-              border: "1px solid #10b981",
-              background: !items.length || loading ? "#e2e8f0" : "#10b981",
-              color: !items.length || loading ? "#94a3b8" : "#fff",
-              fontWeight: 500,
-              cursor: !items.length || loading ? "not-allowed" : "pointer"
-            }}
+            className={`rounded-lg border px-[18px] py-[10px] font-medium transition-colors ${
+              !items.length || loading
+                ? "cursor-not-allowed border-emerald-500 bg-slate-200 text-slate-400"
+                : "cursor-pointer border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600"
+            }`}
           >
             Export CSV (Template)
           </button>
@@ -733,31 +714,19 @@ export default function Home() {
       </section>
 
       {error && (
-        <div style={{ background: "#fee2e2", border: "1px solid #fecaca", color: "#b91c1c", padding: "12px 16px", borderRadius: 8, marginBottom: 16 }}>
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-100 px-4 py-3 text-red-700">
           {error}
         </div>
       )}
 
       <section>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontWeight: 600 }}>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="font-semibold">
             {loading ? "Loading results..." : `${resultCount} result${resultCount === 1 ? "" : "s"}`}
           </div>
         </div>
         {counts ? (
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 16,
-              fontSize: 13,
-              color: "#fff",
-              marginBottom: 12,
-              background: "#1e293b",
-              borderRadius: 8,
-              padding: "10px 14px"
-            }}
-          >
+          <div className="mb-3 flex flex-wrap gap-4 rounded-lg bg-slate-800 px-3.5 py-2.5 text-[13px] text-white">
             <div>
               <strong>Contracts Finder:</strong>{" "}
               {cfSummaryText}
@@ -769,25 +738,12 @@ export default function Home() {
           </div>
         ) : null}
         {counts && counts.fts.requested !== false && counts.fts.active === false ? (
-          <div style={{ marginBottom: 12, fontSize: 12, color: "#b91c1c" }}>
+          <div className="mb-3 text-xs text-red-700">
             Find a Tender data requires an FTS API key; no tender notices were retrieved.
           </div>
         ) : null}
         {counts && (cfFilteredOut > 0 || ftsFilteredOut > 0) ? (
-          <div
-            style={{
-              marginBottom: 12,
-              fontSize: 12,
-              color: "#b91c1c",
-              background: "#fee2e2",
-              border: "1px solid #fecaca",
-              borderRadius: 6,
-              padding: "8px 12px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 4
-            }}
-          >
+          <div className="mb-3 flex flex-col gap-1 rounded-md border border-red-200 bg-red-100 px-3 py-2 text-xs text-red-700">
             {cfFilteredOut > 0 ? (
               <div>
                 {cfFilteredOut} Contracts Finder notice{cfFilteredOut === 1 ? "" : "s"} were removed by the current keyword, procurement-stage, type, or status filters.
@@ -807,25 +763,17 @@ export default function Home() {
             counts.fts.active !== false &&
             counts.fts.available > counts.fts.retrieved)
         ) ? (
-          <div style={{ marginBottom: 12, fontSize: 12, color: "#b45309", background: "#fef3c7", border: "1px solid #fcd34d", borderRadius: 6, padding: "8px 12px" }}>
+          <div className="mb-3 rounded-md border border-amber-300 bg-amber-100 px-3 py-2 text-xs text-amber-700">
             Some sources returned more records than were fetched. Refine your filters to load the remaining notices.
           </div>
         ) : null}
 
         {activeFilterChips.length ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+          <div className="mb-4 flex flex-wrap gap-2">
             {activeFilterChips.map(chip => (
               <span
                 key={chip.key}
-                style={{
-                  background: "#e2e8f0",
-                  color: "#0f172a",
-                  padding: "6px 12px",
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: 0.2
-                }}
+                className="rounded-full bg-slate-200 px-3 py-1.5 text-xs font-semibold tracking-[0.2px] text-slate-900"
               >
                 {chip.label}
               </span>
@@ -833,24 +781,24 @@ export default function Home() {
           </div>
         ) : null}
 
-        <div style={{ overflowX: "auto", background: "#fff", borderRadius: 12, boxShadow: "0 1px 3px rgba(15,23,42,0.08)" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 840 }}>
-            <thead style={{ background: "#f1f5f9" }}>
+        <div className="overflow-x-auto rounded-xl bg-white shadow-[0_1px_3px_rgba(15,23,42,0.08)] text-[#111]">
+          <table className="w-full min-w-[840px] border-collapse">
+            <thead className="bg-slate-100">
               <tr>
-                <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 600 }}>Title</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 600, width: 120 }}>Type</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 600, width: 120 }}>Status</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 600, width: 220 }}>Organisation</th>
-                <th style={{ textAlign: "right", padding: "12px 16px", fontWeight: 600, width: 160 }}>Value</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 600, width: 120 }}>Published</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 600, width: 120 }}>Deadline</th>
-                <th style={{ textAlign: "left", padding: "12px 16px", fontWeight: 600, width: 100 }}>Source</th>
+                <th className="px-4 py-3 text-left font-semibold">Title</th>
+                <th className="w-[120px] px-4 py-3 text-left font-semibold">Type</th>
+                <th className="w-[120px] px-4 py-3 text-left font-semibold">Status</th>
+                <th className="w-[220px] px-4 py-3 text-left font-semibold">Organisation</th>
+                <th className="w-[160px] px-4 py-3 text-right font-semibold">Value</th>
+                <th className="w-[120px] px-4 py-3 text-left font-semibold">Published</th>
+                <th className="w-[120px] px-4 py-3 text-left font-semibold">Deadline</th>
+                <th className="w-[100px] px-4 py-3 text-left font-semibold">Source</th>
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: "24px 16px", textAlign: "center", color: "#64748b" }}>
+                  <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
                     {loading ? "Searching notices..." : "No notices matched the current filters."}
                   </td>
                 </tr>
@@ -860,49 +808,43 @@ export default function Home() {
                   const sourceLabel = notice.source === "FTS" ? "TD" : notice.source || "--";
                   const isFtsNotice = notice.source === "FTS";
                   const isSelected = selectedNoticeId === rowId;
-                  const rowBackground = isSelected ? "#dbeafe" : isFtsNotice ? "#fff7ed" : "transparent";
+                  const rowClassName = `border-t border-slate-200 ${
+                    isSelected ? "bg-blue-100" : isFtsNotice ? "bg-orange-50" : "bg-transparent"
+                  }`;
 
                   return (
-                    <tr key={rowId} style={{ borderTop: "1px solid #e2e8f0", background: rowBackground }}>
-                      <td style={{ padding: "12px 16px", verticalAlign: "top" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                            <a href={notice.link} target="_blank" rel="noreferrer" style={{ color: "#2563eb", fontWeight: 600 }}>
+                    <tr key={rowId} className={rowClassName}>
+                      <td className="px-4 py-3 align-top">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-1">
+                            <a href={notice.link} target="_blank" rel="noreferrer" className="font-semibold text-blue-600">
                               {notice.title || "Untitled notice"}
                             </a>
                             {notice.cpvCodes ? (
-                              <span style={{ fontSize: 12, color: "#64748b" }}>{notice.cpvCodes}</span>
+                              <span className="text-xs text-slate-500">{notice.cpvCodes}</span>
                             ) : null}
                           </div>
                           <button
                             type="button"
                             onClick={() => handleSelectNotice(rowId)}
                             aria-pressed={isSelected}
-                            style={{
-                              alignSelf: "flex-start",
-                              fontSize: 13,
-                              fontWeight: 600,
-                              color: isSelected ? "#1d4ed8" : "#1f2937",
-                              background: "transparent",
-                              border: "none",
-                              padding: 0,
-                              textDecoration: "underline",
-                              cursor: "pointer"
-                            }}
+                            className={`self-start text-[13px] font-semibold underline transition-colors ${
+                              isSelected ? "text-blue-700" : "text-slate-800"
+                            }`}
                           >
                             {isSelected ? "Hide details" : "View more"}
                           </button>
                         </div>
                       </td>
-                      <td style={{ padding: "12px 16px" }}>{notice.noticeType || "--"}</td>
-                      <td style={{ padding: "12px 16px" }}>{notice.noticeStatus || "--"}</td>
-                      <td style={{ padding: "12px 16px" }}>{notice.organisationName || "--"}</td>
-                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                      <td className="px-4 py-3">{notice.noticeType || "--"}</td>
+                      <td className="px-4 py-3">{notice.noticeStatus || "--"}</td>
+                      <td className="px-4 py-3">{notice.organisationName || "--"}</td>
+                      <td className="px-4 py-3 text-right">
                         {formatCurrencyRange(notice.valueLow, notice.valueHigh, notice.awardedValue)}
                       </td>
-                      <td style={{ padding: "12px 16px" }}>{formatDate(notice.publishedDate)}</td>
-                      <td style={{ padding: "12px 16px" }}>{formatDate(notice.deadlineDate)}</td>
-                      <td style={{ padding: "12px 16px" }}>{sourceLabel}</td>
+                      <td className="px-4 py-3">{formatDate(notice.publishedDate)}</td>
+                      <td className="px-4 py-3">{formatDate(notice.deadlineDate)}</td>
+                      <td className="px-4 py-3">{sourceLabel}</td>
                     </tr>
                   );
                 })
@@ -914,15 +856,7 @@ export default function Home() {
           <div
             role="presentation"
             onClick={handleCloseDetails}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(15,23,42,0.35)",
-              backdropFilter: "blur(2px)",
-              zIndex: 1000,
-              display: "flex",
-              justifyContent: "flex-end"
-            }}
+            className="fixed inset-0 z-[1000] flex justify-end bg-slate-900/35 backdrop-blur-sm"
           >
             <div
               role="dialog"
@@ -931,86 +865,68 @@ export default function Home() {
               ref={detailPanelRef}
               tabIndex={-1}
               onClick={event => event.stopPropagation()}
-              style={{
-                width: "min(440px, 90vw)",
-                height: "100%",
-                background: "#fff",
-                boxShadow: "-8px 0 24px rgba(15,23,42,0.18)",
-                padding: "24px 24px 32px 24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 20,
-                overflowY: "auto"
-              }}
+              className="flex h-full w-[min(440px,90vw)] flex-col gap-5 overflow-y-auto bg-white px-6 pb-8 pt-6 shadow-[-8px_0_24px_rgba(15,23,42,0.18)]"
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, color: "#2563eb" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-[0.4px] text-blue-600">
                       {selectedNoticeDetails.stageLabel}
                     </span>
-                    <span style={{ fontSize: 12, color: "#64748b" }}>{selectedNoticeDetails.sourceLabel}</span>
+                    <span className="text-xs text-slate-500">{selectedNoticeDetails.sourceLabel}</span>
                   </div>
                   <a
                     id={`notice-panel-title-${selectedNoticeId ?? "current"}`}
                     href={selectedNotice.link}
                     target="_blank"
                     rel="noreferrer"
-                    style={{ color: "#1f2937", fontWeight: 700, fontSize: 18, lineHeight: 1.3 }}
+                    className="text-[18px] font-bold leading-[1.3] text-slate-800"
                   >
                     {selectedNotice.title || "Untitled notice"}
                   </a>
                   {selectedNotice.organisationName ? (
-                    <span style={{ fontSize: 13, color: "#475569" }}>{selectedNotice.organisationName}</span>
+                    <span className="text-[13px] text-slate-600">{selectedNotice.organisationName}</span>
                   ) : null}
                 </div>
                 <button
                   type="button"
                   onClick={handleCloseDetails}
                   aria-label="Close details"
-                  style={{
-                    border: "none",
-                    background: "transparent",
-                    color: "#475569",
-                    fontSize: 20,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    lineHeight: 1
-                  }}
+                  className="text-xl font-semibold leading-none text-slate-600 transition-colors hover:text-slate-800"
                 >
                   X
                 </button>
               </div>
               {selectedNoticeDetails.description ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <span style={{ fontSize: 12, color: "#64748b", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.4px] text-slate-500">
                     Description
                   </span>
-                  <div style={{ fontSize: 14, lineHeight: 1.5, color: "#0f172a", whiteSpace: "pre-line" }}>
+                  <div className="whitespace-pre-line text-sm leading-6 text-slate-900">
                     {selectedNoticeDetails.description}
                   </div>
                 </div>
               ) : null}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+              <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
                 {selectedNoticeDetails.detailItems.map(item => (
-                  <div key={item.label} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <span style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.4, fontWeight: 700 }}>
+                  <div key={item.label} className="flex flex-col gap-1">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.4px] text-slate-500">
                       {item.label}
                     </span>
-                    <span style={{ fontSize: 14, color: "#0f172a" }}>{item.value}</span>
+                    <span className="text-sm text-slate-900">{item.value}</span>
                   </div>
                 ))}
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+              <div className="flex flex-wrap items-center gap-3">
                 <a
                   href={selectedNotice.link}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "#2563eb", fontWeight: 600, textDecoration: "none" }}
+                  className="inline-flex items-center gap-1.5 font-semibold text-blue-600 hover:underline"
                 >
                   View full notice on {selectedNoticeDetails.externalSourceName}
                 </a>
-                <span style={{ fontSize: 12, color: "#94a3b8" }}>Opens in a new tab</span>
+                <span className="text-xs text-slate-400">Opens in a new tab</span>
               </div>
             </div>
           </div>
@@ -1019,3 +935,4 @@ export default function Home() {
     </div>
   );
 }
+
