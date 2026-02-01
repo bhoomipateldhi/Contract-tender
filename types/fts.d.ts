@@ -17,7 +17,7 @@ declare module "@/lib/fts.mjs" {
     nextCursor?: string | null;
   }
 
-  export function searchFindATender(options?: FtsSearchOptions): Promise<FtsSearchResult>;
+  export function findTenders(options?: FtsSearchOptions): Promise<FtsSearchResult>;
   export const FTS_AUTHORITY_KEYWORDS: string[];
   export function containsAuthorityKeyword(value?: string | null): boolean;
 }
