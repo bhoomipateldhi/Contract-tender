@@ -5,8 +5,8 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const date = url.searchParams.get("date");
-    const updatedTo = url.searchParams.get("updatedTo") || undefined;
-    const limit = url.searchParams.get("limit") || undefined;
+    const updatedTo = url.searchParams.get("updatedTo");
+    const limit = url.searchParams.get("limit");
 
     const releases = date
       ? await fetchTenderReleasesForDate(date)
