@@ -68,7 +68,7 @@ export async function fetchTenders(options: FetchTendersParams = {}): Promise<Te
       const releaseDate = parseDateSafe(release.date);
       if (releaseDate !== null && releaseDate >= Date.parse(startIso) && releaseDate <= Date.parse(endIso)) {
         // Enrich with noticeType
-        release.procurement_type = getNoticeType(release);
+        release.opportunity_type = getNoticeType(release);
         all.push(release);
       }
     }
@@ -90,15 +90,6 @@ export async function fetchTenders(options: FetchTendersParams = {}): Promise<Te
 }
 
 // Based on https://www.find-tender.service.gov.uk/Home/NoticeTypes
-// and user requested mapping:
-// Pipeline: UK1
-// Planning: UK2, UK3
-// Tender: UK4
-// Award: UK6
-// Contract: UK7
-// Termination: UK11, UK12
-// Others can map to reasonably close buckets or be ignored/kept as code if preferred,
-// but for this specific request we map to the user's specific buckets.
 
 const NOTICE_TYPE_MAPPING: Record<string, string> = {
   // Procurement Act 2023 notice types
