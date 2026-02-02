@@ -4,7 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { TENDER_STAGES } from "@/lib/tender-finder";
+import {
+  TENDER_STAGES,
+  getSuppliers,
+  getBuyer
+} from "@/lib/tender-finder";
+import {
+  TenderRelease,
+  Party,
+  Award,
+  Contract
+} from "@/lib/tender-finder/types";
 import {
   Dialog,
   DialogContent,
@@ -15,45 +25,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-type TenderRelease = {
-  ocid?: string;
-  id?: string;
-  tag?: string[];
-  date?: string;
-  initiationType?: string;
-  parties?: Party[];
-  buyer?: { id?: string; name?: string };
-  tender?: { id?: string; title?: string; description?: string; status?: string; procurementMethodDetails?: string };
-  awards?: Award[];
-  contracts?: Contract[];
-};
-
-type Party = {
-  id?: string;
-  name?: string;
-  roles?: string[];
-  address?: {
-    streetAddress?: string;
-    locality?: string;
-    postalCode?: string;
-    countryName?: string;
-    region?: string;
-  };
-  contactPoint?: { email?: string };
-};
-
-type Award = {
-  suppliers?: { id?: string; name?: string }[];
-  items?: { additionalClassifications?: { id?: string; description?: string }[] }[];
-};
-
-type Contract = {
-  period?: { startDate?: string; endDate?: string };
-  value?: { amount?: number; amountGross?: number; currency?: string };
-  dateSigned?: string;
-  documents?: { url?: string }[];
-};
 
 type ApiResponse = { tenders?: TenderRelease[]; count?: number; error?: string };
 
@@ -79,7 +50,7 @@ function formatMoney(value?: number, currency?: string) {
       maximumFractionDigits: 0
     }).format(value);
   } catch {
-    return `${value} ${currency || ""}`.trim();
+    return `${value} ${currency || ""} `.trim();
   }
 }
 
@@ -87,21 +58,6 @@ function buildAddress(party?: Party) {
   if (!party?.address) return "-";
   const { streetAddress, locality, postalCode, countryName } = party.address;
   return [streetAddress, locality, postalCode, countryName].filter(Boolean).join(", ") || "-";
-}
-
-function getSuppliers(release: TenderRelease) {
-  const fromAwards = release.awards?.flatMap(award => award.suppliers || []).map(s => s?.name).filter(Boolean) || [];
-  const fromParties =
-    release.parties?.filter(party => party.roles?.includes("supplier")).map(p => p.name).filter(Boolean) || [];
-  const set = new Set([...fromAwards, ...fromParties]);
-  return Array.from(set);
-}
-
-function getBuyer(release: TenderRelease) {
-  const fromBuyer = release.buyer?.name;
-  if (fromBuyer) return fromBuyer;
-  const buyerParty = release.parties?.find(party => party.roles?.includes("buyer"));
-  return buyerParty?.name || "-";
 }
 
 function getBuyerParty(release: TenderRelease) {
@@ -113,7 +69,18 @@ function getBuyerParty(release: TenderRelease) {
 }
 
 function getNoticeUrl(release: TenderRelease) {
-  return release.contracts?.flatMap(contract => contract.documents || []).map(doc => doc.url).find(Boolean) || null;
+  const fromContracts =
+    release.contracts?.flatMap(contract => contract.documents || []).map(doc => doc.url).find(Boolean);
+  if (fromContracts) return fromContracts;
+
+  const fromPlanning = release.planning?.documents?.map(doc => doc.url).find(Boolean);
+  if (fromPlanning) return fromPlanning;
+
+  // Sometimes documents are attached directly to tender (though less common in OCDS for notices, but possible)
+  // Check if type definition supports it? Currently TenderRelease type for 'tender' doesn't show documents array in types.ts
+  // But let's check the type definition I imported.
+
+  return null;
 }
 
 export default function TendersPage() {
@@ -284,7 +251,7 @@ export default function TendersPage() {
                     const value = contract?.value?.amountGross ?? contract?.value?.amount;
                     return (
                       <TableRow
-                        key={`${release.ocid || "release"}-${index}`}
+                        key={`${release.ocid || "release"} -${index} `}
                         className="cursor-pointer"
                         onClick={() => setSelected(release)}
                       >
@@ -300,7 +267,11 @@ export default function TendersPage() {
                         <TableCell>{buyer}</TableCell>
                         <TableCell>{suppliers.length ? suppliers.join(", ") : "-"}</TableCell>
                         <TableCell>
-                          {release.tender?.status ? <Badge>{release.tender.status}</Badge> : <span>-</span>}
+                          {release.procurement_type ? (
+                            <Badge>{release.procurement_type}</Badge>
+                          ) : (
+                            <span>-</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           {formatMoney(value, contract?.value?.currency)}
@@ -321,65 +292,70 @@ export default function TendersPage() {
           if (!open) setSelected(null);
         }}
       >
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-h-[95vh] w-full max-w-4xl flex flex-col overflow-hidden p-0 gap-0">
+          <DialogHeader className="p-6">
             <DialogTitle>{selected?.tender?.title || "Tender details"}</DialogTitle>
-            <DialogDescription>{selected?.tender?.description || "No description provided."}</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 text-sm">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Buyer</p>
-                <p className="font-medium">{selectedBuyer}</p>
-                <p className="text-xs text-muted-foreground">{buildAddress(selectedBuyerParty)}</p>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="grid gap-6">
+              <DialogDescription
+                className="text-sm text-foreground"
+                dangerouslySetInnerHTML={{ __html: selected?.tender?.description || "No description provided." }}
+              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Buyer</p>
+                  <p className="font-medium">{selectedBuyer}</p>
+                  <p className="text-xs text-muted-foreground">{buildAddress(selectedBuyerParty)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Suppliers</p>
+                  <p className="font-medium">{selectedSuppliers.length ? selectedSuppliers.join(", ") : "-"}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Suppliers</p>
-                <p className="font-medium">{selectedSuppliers.length ? selectedSuppliers.join(", ") : "-"}</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Release date</p>
+                  <p>{formatDate(selected?.date)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <p>{selected?.tender?.status || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Contract value</p>
+                  <p>{formatMoney(selectedValue, selectedContract?.value?.currency)}</p>
+                </div>
               </div>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Release date</p>
-                <p>{formatDate(selected?.date)}</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Start</p>
+                  <p>{formatDate(selectedContract?.period?.startDate)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">End</p>
+                  <p>{formatDate(selectedContract?.period?.endDate)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Signed</p>
+                  <p>{formatDate(selectedContract?.dateSigned)}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Status</p>
-                <p>{selected?.tender?.status || "-"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Contract value</p>
-                <p>{formatMoney(selectedValue, selectedContract?.value?.currency)}</p>
-              </div>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Start</p>
-                <p>{formatDate(selectedContract?.period?.startDate)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">End</p>
-                <p>{formatDate(selectedContract?.period?.endDate)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Signed</p>
-                <p>{formatDate(selectedContract?.dateSigned)}</p>
-              </div>
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Identifiers</p>
-                <p>{selected?.ocid || selected?.id || "-"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Initiation type</p>
-                <p>{selected?.initiationType || "-"}</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Identifiers</p>
+                  <p>{selected?.ocid || selected?.id || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Initiation type</p>
+                  <p>{selected?.initiationType || "-"}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="p-6">
             {selectedUrl ? (
               <a
                 href={selectedUrl}
