@@ -3,11 +3,51 @@ export * from "./types";
 
 const UK_FIND_TENDER_API = "https://www.find-tender.service.gov.uk/api/1.0/ocdsReleasePackages";
 
-export const TENDER_STAGES = [
-  { value: "planning", label: "Planning" },
-  { value: "tender", label: "Tender" },
-  { value: "award", label: "Award" }
-] as const;
+// Standard OCDS stages supported by the external Find a Tender API
+const OCDS_STAGES = ['planning', 'tender', 'award', 'contract', 'implementation'];
+
+// Based on https://www.find-tender.service.gov.uk/Home/NoticeTypes
+export const NOTICE_TYPE_MAPPING: Record<string, string> = {
+  // Procurement Act 2023 notice types
+  "UK1": "pipeline-notice",
+  "UK2": "preliminary-market-engagement-notice",
+  "UK3": "planned-procurement-notice",
+  "UK4": "tender-notice",
+  "UK5": "transparency-notice",
+  "UK6": "contract-award-notice",
+  "UK7": "contract-details-notice",
+  "UK10": "contract-change-notice",
+  "UK11": "contract-termination-notice",
+  "UK12": "procurement-termination-notice",
+  "UK13": "dynamic-market-intention-notice",
+  "UK14": "dynamic-market-establishment-notice",
+  "UK15": "dynamic-market-modification-notice",
+  "UK16": "dynamic-market-cessation-notice",
+  
+  // Legacy mappings (approximate)
+  "F01": "prior-information-notice", // Approx UK1/UK3
+  "F02": "contract-notice", // Approx UK4
+  "F03": "contract-award-notice", // Approx UK6
+  "F06": "contract-award-notice",
+  "F20": "contract-modification-notice", // Approx UK10
+  "F21": "social-and-other-specific-services-public-contracts", // Planning/Tender hybrid
+};
+
+export const OPPORTUNITY_TYPES = Array.from(new Set(Object.values(NOTICE_TYPE_MAPPING)))
+  .sort()
+  .map(slug => ({
+    value: slug,
+    label: slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+  }));
+
+function getApiStageFromType(type: string): string | null {
+  const t = type.toLowerCase();
+  if (t.includes('planning') || t.includes('pipeline') || t.includes('preliminary') || t.includes('market-intention')) return 'planning';
+  if (t.includes('tender')) return 'tender';
+  if (t.includes('award')) return 'award';
+  if (t.includes('contract') || t.includes('termination') || t.includes('implementation') || t.includes('modification') || t.includes('cessation')) return 'contract';
+  return null;
+}
 
 export function getSuppliers(release: TenderRelease) {
   const fromAwards =
@@ -56,8 +96,18 @@ export async function fetchTenders(options: FetchTendersParams = {}): Promise<Te
   const seen = new Set<string>();
   let page = 0;
 
+  // If specific opportunity type slugs are provided, map them to API stages
+  // to narrow down results.
+  const requestedStages = Array.isArray(stages) ? stages : (stages ? [stages] : []);
+  const apiStages = requestedStages
+    .map(getApiStageFromType)
+    .filter(Boolean) as string[];
+
   while (page < maxPages) {
-    const releases = await fetchTendersPage({ updatedTo: currentTo, stages });
+    const releases = await fetchTendersPage({ 
+      updatedTo: currentTo, 
+      stages: apiStages.length > 0 ? apiStages : undefined 
+    });
     if (!releases.length) break;
 
     for (const release of releases) {
@@ -67,9 +117,18 @@ export async function fetchTenders(options: FetchTendersParams = {}): Promise<Te
 
       const releaseDate = parseDateSafe(release.date);
       if (releaseDate !== null && releaseDate >= Date.parse(startIso) && releaseDate <= Date.parse(endIso)) {
-        // Enrich with noticeType
-        release.opportunity_type = getNoticeType(release);
-        all.push(release);
+        // Enrich with noticeType slug
+        const noticeType = getNoticeType(release);
+        release.opportunity_type = noticeType;
+
+        // Final filter: If specific slugs were requested, ensure noticeType matches
+        if (requestedStages.length > 0) {
+          if (noticeType && requestedStages.includes(noticeType)) {
+            all.push(release);
+          }
+        } else {
+          all.push(release);
+        }
       }
     }
 
@@ -89,34 +148,6 @@ export async function fetchTenders(options: FetchTendersParams = {}): Promise<Te
   return all;
 }
 
-// Based on https://www.find-tender.service.gov.uk/Home/NoticeTypes
-
-const NOTICE_TYPE_MAPPING: Record<string, string> = {
-  // Procurement Act 2023 notice types
-  "UK1": "pipeline-notice",
-  "UK2": "preliminary-market-engagement-notice",
-  "UK3": "planned-procurement-notice",
-  "UK4": "tender-notice",
-  "UK5": "transparency-notice",
-  "UK6": "contract-award-notice",
-  "UK7": "contract-details-notice",
-  "UK10": "contract-change-notice",
-  "UK11": "contract-termination-notice",
-  "UK12": "procurement-termination-notice",
-  "UK13": "dynamic-market-intention-notice",
-  "UK14": "dynamic-market-establishment-notice",
-  "UK15": "dynamic-market-modification-notice",
-  "UK16": "dynamic-market-cessation-notice",
-  
-  // Legacy mappings (approximate)
-  "F01": "prior-information-notice", // Approx UK1/UK3
-  "F02": "contract-notice", // Approx UK4
-  "F03": "contract-award-notice", // Approx UK6
-  "F06": "contract-award-notice",
-  "F20": "contract-modification-notice", // Approx UK10
-  "F21": "social-and-other-specific-services-public-contracts", // Planning/Tender hybrid
-};
-
 export function getNoticeType(release: TenderRelease): string | undefined {
   let foundType: string | undefined;
 
@@ -127,8 +158,6 @@ export function getNoticeType(release: TenderRelease): string | undefined {
 
   // 1. Try to find explicit UK notice type in any documents section
   // Priority: Contracts -> Awards -> Tender -> Planning
-  // usually the latest stage is what we want.
-  
   if (release.contracts) {
     for (const contract of release.contracts) {
       const type = findInDocs(contract.documents);
@@ -164,9 +193,7 @@ export function getNoticeType(release: TenderRelease): string | undefined {
   }
 
   // 3. Fallback to OCDS tags if no specific UK notice type found
-  // This is explicit data provided by the API, so it is safe to use.
   if (release.tag && release.tag.length > 0) {
-    // Priority map for tags (later stages override earlier ones)
     const TAG_MAPPING: Record<string, string> = {
       "planning": "planned-procurement-notice",
       "tender": "tender-notice",
@@ -175,9 +202,6 @@ export function getNoticeType(release: TenderRelease): string | undefined {
       "implementation": "contract-details-notice"
     };
 
-    // Iterate through tags and find the most significant one
-    // Usually the last tag is the most relevant, but let's be safe
-    // Actually, taking the last one in the list is usually correct for OCDS
     const lastTag = release.tag[release.tag.length - 1];
     if (TAG_MAPPING[lastTag]) {
       return TAG_MAPPING[lastTag];
@@ -192,10 +216,9 @@ async function fetchTendersPage(options: FetchTendersPageParams): Promise<Tender
   const safeLimit = options.limit ?? 100;
   if (options.updatedTo) searchParams.set("updatedTo", options.updatedTo);
   if (options.stages) {
-    const values = Array.isArray(options.stages)
-      ? options.stages
-      : [String(options.stages).trim()];
-    const stage = values.find(value => TENDER_STAGES.some(item => item.value === value));
+    const values = Array.isArray(options.stages) ? options.stages : [String(options.stages).trim()];
+    // We take the first valid OCDS stage found to filter at the API level
+    const stage = values.find(value => OCDS_STAGES.includes(value));
     if (stage) searchParams.set("stages", stage);
   }
   searchParams.set("limit", String(safeLimit));
