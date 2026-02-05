@@ -269,8 +269,8 @@ function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export function getTenderUrl(release: TenderRelease): string | undefined {
-  if (!release.tag || !release.tag.length) return undefined;
+export function getTenderUrl(release: TenderRelease): string {
+  if (!release.tag || !release.tag.length) return "";
 
   // Helper to find URL in a list of documents
   const findUrl = (docs?: { url?: string; noticeType?: string }[]) => {
@@ -317,5 +317,5 @@ export function getTenderUrl(release: TenderRelease): string | undefined {
     }
   }
 
-  return undefined;
+  return "";
 }
