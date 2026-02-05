@@ -120,6 +120,7 @@ export async function fetchTenders(options: FetchTendersParams = {}): Promise<Te
         // Enrich with noticeType slug
         const noticeType = getNoticeType(release);
         release.opportunity_type = noticeType;
+        release.tender_url = getTenderUrl(release);
 
         // Final filter: If specific slugs were requested, ensure noticeType matches
         if (requestedStages.length > 0) {
@@ -266,4 +267,55 @@ function parseDateSafe(value?: string): number | null {
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export function getTenderUrl(release: TenderRelease): string | undefined {
+  if (!release.tag || !release.tag.length) return undefined;
+
+  // Helper to find URL in a list of documents
+  const findUrl = (docs?: { url?: string; noticeType?: string }[]) => {
+    // Prefer documents that have a noticeType (official UK notices)
+    const official = docs?.find(d => d.noticeType && d.url);
+    if (official?.url) return official.url;
+    // Fallback to any document with a URL
+    return docs?.find(d => d.url)?.url;
+  };
+
+  // Check based on the tags present
+  const tags = release.tag;
+
+  // Priority: Contract -> Award -> Tender -> Planning
+  if (tags.some(t => t.includes('contract') || t.includes('implementation'))) {
+    if (release.contracts) {
+      for (const contract of release.contracts) {
+        const url = findUrl(contract.documents);
+        if (url) return url;
+      }
+    }
+  }
+
+  if (tags.some(t => t.includes('award'))) {
+    if (release.awards) {
+      for (const award of release.awards) {
+        const url = findUrl(award.documents);
+        if (url) return url;
+      }
+    }
+  }
+
+  if (tags.some(t => t.includes('tender'))) {
+    if (release.tender) {
+      const url = findUrl(release.tender.documents);
+      if (url) return url;
+    }
+  }
+
+  if (tags.some(t => t.includes('planning'))) {
+    if (release.planning) {
+      const url = findUrl(release.planning.documents);
+      if (url) return url;
+    }
+  }
+
+  return undefined;
 }

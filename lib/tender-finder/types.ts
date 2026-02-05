@@ -59,6 +59,7 @@ export type TenderRelease = {
   date?: string;
   tag?: string[];
   opportunity_type?: string;
+  tender_url?: string;
   initiationType?: string;
   tender?: {
     id?: string;
