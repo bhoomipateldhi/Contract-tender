@@ -317,5 +317,5 @@ export function getTenderUrl(release: TenderRelease): string {
     }
   }
 
-  return "";
+  return "https://www.find-tender.service.gov.uk/Notice/" + release.id;
 }
